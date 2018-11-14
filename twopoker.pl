@@ -111,6 +111,15 @@ hand_value([(_,A),(_,B),(_,C),(_,D),(_,E)], pair):- A=B; B=C; C=D; D=E.
 hand_value([(_,A),(_,B),(_,C),(_,D),(_,E)], no_pair).
 
 % hand_value(L,Y) L is the 3 face up cards and Y is the hand value of the person.
+
+hand_value([(S,A),(S,B),(S,C)], straight_flush):- successor(E,D), successor(C,B), successor(B,A).
+hand_value([(S,A),(S,B),(S,C)], flush):- A\=B, B\=C.
+hand_value([(S1,A),(S2,B),(S3,C)], straight) :- S1\=S2, S2\=S3, successor(D,C), successor(C,B), successor(B,A).
+hand_value([(_,A),(_,B),(_,C)], three_of_a_kind) :- (A = B, B = C).
+hand_value([(_,A),(_,A),(_,_)], two_pair).
+hand_value([(_,A),(_,B),(_,C)], pair):- A=B; B=C.
+hand_value([(_,A),(_,B),(_,C)], no_pair).
+
 % Tiebreak cases
 
 tiebreak(straight_flush, H1, H2, Winner)  :- higher_last_card(H1, H2, Winner).
@@ -183,15 +192,25 @@ higher_middle_card(H1, H2, Winner) :-
    Higher = V2, Winner = right).
 
 % calculateprobability: calcualtion of the probability of the cards.
-calculateprobability(straight_flush) :- print("Probability of this hand's occurence is 0.0000138517."),nl.
-calculateprobability(pair) :- print("Probability of this hand's occurence is 0.422569."),nl.
-calculateprobability(two_pair) :- print("Probability of this hand's occurence is 0.047539."),nl.
-calculateprobability(three_of_a_kind) :- print("Probability of this hand winning is 0.0211285."),nl.
-calculateprobability(no_pair) :- print("Probability of this hand winning is 0.501177."),nl.
-calculateprobability(straight) :- print("Probability of this hand winning is 0.00392465."),nl.
-calculateprobability(full_house) :- print("Probability of this hand winning is 0.00144058."),nl.
-calculateprobability(four_of_a_kind) :- print("Probability of this hand winning is 0.000240096."),nl.
-calculateprobability(flush) :- print("Probability of this hand winning is 0.0019654."),nl.
+calculateprobability(straight_flush) :- print("0.0000138517."),nl.
+calculateprobability(pair) :- print("0.422569."),nl.
+calculateprobability(two_pair) :- print("0.047539."),nl.
+calculateprobability(three_of_a_kind) :- print("0.0211285."),nl.
+calculateprobability(no_pair) :- print("0.501177."),nl.
+calculateprobability(straight) :- print("0.00392465."),nl.
+calculateprobability(full_house) :- print("0.00144058."),nl.
+calculateprobability(four_of_a_kind) :- print("0.000240096."),nl.
+calculateprobability(flush) :- print("0.0019654."),nl.
+
+calculateprobability(straight_flush,X) :- X= 0.0000138517.
+calculateprobability(pair,X) :- X= 0.422569.
+calculateprobability(two_pair,X) :- X = 0.047539.
+calculateprobability(three_of_a_kind,X) :- X =  0.0211285.
+calculateprobability(no_pair,X) :- X = 0.501177.
+calculateprobability(straight,X) :- X=  0.00392465.
+calculateprobability(full_house,X) :- X= 0.00144058.
+calculateprobability(four_of_a_kind,X) :- X= 0.000240096.
+calculateprobability(flush,X) :- X= 0.0019654.
 
 random_permutation(L,L3) :- 
     add_random_keys(L,L1), 
@@ -210,7 +229,18 @@ take(List, N, Prefix) :-
     ;   length(Prefix, N),
         append(Prefix, _, List)
     ).
-splitlist([A,B,C,D,E|T],H,T).
+
+combination(0, _, []) :- 
+    !.
+combination(N, L, [V|R]) :-
+    N > 0,
+    NN is N - 1,
+    unknown(V, L, Rem),
+    combination(NN, Rem, R).
+
+unknown(X,[X|L],L).
+unknown(X,[_|L],R) :- 
+    unknown(X,L,R).
 split([H,M,N,O,P|T], H, T).
 
 split([H,M,N,O,P|T], X, [H,M,N,O,P|Y]) :-
@@ -220,11 +250,16 @@ print(A),
 nl,
 print(B), 
 nl,
-print(C),
+print(C).
+
+printcards([A,B,C|R],M):- 
+print(A), 
 nl,
-qsortl([A,B,C],Sorted_Hand1),
-print(Sorted_Hand1).
-generaterandoms(Hand):- 
+print(B), 
+nl,
+print(C).
+.
+pokertwoplayer(Hand):- 
 	  random_permutation([(clubs,2),(clubs,3),(clubs,4),(clubs,5),(clubs,6),(clubs,7),(clubs,8),(clubs,9),(clubs,10),(clubs,jack),(clubs,queen),(clubs,king),(clubs,ace),(spades,2),(spades,3),(spades,4),
 (spades,5),(spades,6),(spades,7),(spades,8),(spades,9),(spades,10),(spades,jack),
 (spades,queen),(spades,king),(spades,ace),(hearts,2),(hearts,3),(hearts,4),(hearts,5),
@@ -239,46 +274,58 @@ generaterandoms(Hand):-
 		nl,
 		print("Hand One:"),
 		nl,
-		printcards(L1).
+		printcards(L1),
 		nl,
 		print("Hand Two:"),
 		nl,
 		printcards(L2),
 		nl,
+		take(L1,3,M),
+		take(L2,3,N),
+		print("Considering only the three cards: "),
+		nl,
+		print("The probability for the hand 1 is :"),
+		findall(X,(combination(2,R,Ans),append(M,Ans,Z),qsortl(Z, Sorted_Hand),hand_value(Sorted_Hand, Hvalue),calculateprobability(Hvalue,X)),List),
+		list_sum(List,Sum),
+		length(List,X),
+		Prob1 is Sum/X,
+		print(Prob1),
+		nl,
+		print("The probability for the Hand 2 is :"),
+		findall(X1,(combination(2,R,Ans1),append(N,Ans1,Z1),qsortl(Z1, Sorted_Hand_1),hand_value(Sorted_Hand_1, Hvalue_1),calculateprobability(Hvalue_1,X1)),List1),
+		list_sum(List1,Sum1),
+		length(List1,X1),
+		Prob2 is Sum1/X,
+		print(Prob2),
 		better_poker_hand(L1,L2,Hand).		
-generaterandoms(1,Hand):-
- random_permutation([(clubs,2),(clubs,3),(clubs,4),(clubs,5),(clubs,6),(clubs,7),(clubs,8),(clubs,9),(clubs,10),(clubs,jack),(clubs,queen),(clubs,king),(clubs,ace),(spades,2),(spades,3),(spades,4),
-(spades,5),(spades,6),(spades,7),(spades,8),(spades,9),(spades,10),(spades,jack),
-(spades,queen),(spades,king),(spades,ace),(hearts,2),(hearts,3),(hearts,4),(hearts,5),
-(hearts,6),(hearts,7),(hearts,8),(hearts,9),(hearts,10),(hearts,jack),(hearts,queen),(hearts,king),(hearts,ace),
-(diamonds,2),(diamonds,3),(diamonds,4),(diamonds,5),(diamonds,6),(diamonds,7),
-(diamonds,8),(diamonds,9),(diamonds,10),(diamonds,jack),(diamonds,queen),(diamonds,king),
-(diamonds,ace)],L3),
-		take(L3,5,L1),
-		print("Randomly shuffling of the cards is done"),
-		nl,
-		print("Hand One:"),
-		nl,
-		printcards(L1),
-		nl,
-		qsortl(l1, Sorted_Hand1),
-		hand_value(Sorted_Hand1,Hvalue1), 
-		calculateprobability(Hvalue1).
+list_sum([],0).
+
+list_sum([Head|Tail], TotalSum):-
+list_sum(Tail, Sum1),
+TotalSum is Head+Sum1.
 
 better_poker_hand(Hand1,Hand2,Hand):- 
       qsortl(Hand1, Sorted_Hand1),
       qsortl(Hand2, Sorted_Hand2), 
       hand_value(Sorted_Hand1, Hvalue1), 
       hand_value(Sorted_Hand2,Hvalue2),
-	  print("For Hand One: "),
+	  nl,
+	  nl,
+	  print("With all five cards in consideration"),
+	  nl,
+	  print("Hand 1 : "),
+	  print(Sorted_Hand1),
+	  nl,
+	  print("Hand 2 : "),
+	  print(Sorted_Hand2),
+	  nl,
+	  print("For Hand One the probability with 5 cards is : "),
 	  calculateprobability(Hvalue1),
-	  print("For Hand Two: "),
+	  print("For Hand Two the probability with 5 cards is : "),
 	  calculateprobability(Hvalue2),
       beats(Hvalue1,Hvalue2,Hwinner),
-			(Hwinner = Hvalue1, Hand = Hand1; Hwinner = Hvalue2, Hand = Hand2; Hwinner = tie,
+			(Hwinner = Hvalue1, Hand = Sorted_Hand1; Hwinner = Hvalue2, Hand = Sorted_Hand2; Hwinner = tie,
          tiebreak(Hvalue1, Sorted_Hand1,Sorted_Hand2, SortedWinner),
 				 (SortedWinner = left, Hand = Hand1; SortedWinner = right, Hand = Hand2)
       ),
 	  print("The winner after considering all five cards is: ").
-
-	  
